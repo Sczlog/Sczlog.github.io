@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Git 内部原理10.1 笔记 | Sczlog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="看来直接硬啃文档不可取，学习命令的时候对整个git的内部原理会有一些疑惑，比如在git clone –shared中，实操发现区别在于 .git&#x2F;objects 文件夹下，但是这个文件夹时做什么用的呢？存的是改动吗？使用了shared参数以后就会直接使用&#x2F;info&#x2F;alternates文件下给定的路径吗？ 在执行 git init 建立非裸仓库时，会建立一个 .git 目录，这个目录里包含了所有g">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Git 内部原理10.1 笔记">
+<meta property="og:url" content="http://example.com/2020/10/27/Git%E5%86%85%E9%83%A8%E5%8E%9F%E7%90%86/index.html">
+<meta property="og:site_name" content="Sczlog">
+<meta property="og:description" content="看来直接硬啃文档不可取，学习命令的时候对整个git的内部原理会有一些疑惑，比如在git clone –shared中，实操发现区别在于 .git&#x2F;objects 文件夹下，但是这个文件夹时做什么用的呢？存的是改动吗？使用了shared参数以后就会直接使用&#x2F;info&#x2F;alternates文件下给定的路径吗？ 在执行 git init 建立非裸仓库时，会建立一个 .git 目录，这个目录里包含了所有g">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-10-27T08:06:27.000Z">
+<meta property="article:modified_time" content="2020-10-27T08:27:35.342Z">
+<meta property="article:author" content="Sczlog">
+<meta property="article:tag" content="Git">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Sczlog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Sczlog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Git内部原理" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/10/27/Git%E5%86%85%E9%83%A8%E5%8E%9F%E7%90%86/" class="article-date">
+  <time datetime="2020-10-27T08:06:27.000Z" itemprop="datePublished">2020-10-27</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Git 内部原理10.1 笔记
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>看来直接硬啃文档不可取，学习命令的时候对整个git的内部原理会有一些疑惑，比如在git clone –shared中，实操发现区别在于 <code>.git/objects</code> 文件夹下，但是这个文件夹时做什么用的呢？存的是改动吗？使用了shared参数以后就会直接使用/info/alternates文件下给定的路径吗？</p>
+<p>在执行 <code>git init</code> 建立非裸仓库时，会建立一个 <code>.git</code> 目录，这个目录里包含了所有git存储和操作的东西，如果像备份或复制一个版本库，可以把整个目录拷贝至另一处即可。<br>目录的典型结构为，不同的版本可能包含其他内容：</p>
+<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ls -F1</span></span><br><span class="line">config</span><br><span class="line">description</span><br><span class="line">HEAD</span><br><span class="line">hooks/</span><br><span class="line">info/</span><br><span class="line">objects/</span><br><span class="line">refs/</span><br></pre></td></tr></table></figure>
+
+<p>其中：</p>
+<ul>
+<li>description文件用于共GitWeb程序使用；</li>
+<li>config文件包含项目特有的配置选项；</li>
+<li>info目录包含一个全局性排除文件，用于防止那些不希望被记录在 <code>.gitignore</code> 文件中的忽略模式；</li>
+<li>hooks目录包含客户端或服务端的钩子脚本；</li>
+</ul>
+<p>重要部分：</p>
+<ul>
+<li>HEAD文件指向目前被checkout的分支</li>
+<li>refs目录存储指向数据的提交对象的指针；</li>
+<li>index文件保存暂存区信息；</li>
+<li>objects目录存储所有的数据内容。</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2020/10/27/Git%E5%86%85%E9%83%A8%E5%8E%9F%E7%90%86/" data-id="ckgrpqak80000vobh045de0qs" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Git/" rel="tag">Git</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/10/26/Git%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0-DAY2/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Git学习笔记-DAY2</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Git/" rel="tag">Git</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Git/" style="font-size: 10px;">Git</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/10/">十月 2020</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/10/27/Git%E5%86%85%E9%83%A8%E5%8E%9F%E7%90%86/">Git 内部原理10.1 笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2020/10/26/Git%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0-DAY2/">Git学习笔记-DAY2</a>
+          </li>
+        
+          <li>
+            <a href="/2020/10/23/Git%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0-DAY1/">Git学习笔记 DAY1</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Sczlog<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

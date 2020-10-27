@@ -64,6 +64,108 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Git内部原理" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/10/27/Git%E5%86%85%E9%83%A8%E5%8E%9F%E7%90%86/" class="article-date">
+  <time datetime="2020-10-27T08:06:27.000Z" itemprop="datePublished">2020-10-27</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/10/27/Git%E5%86%85%E9%83%A8%E5%8E%9F%E7%90%86/">Git 内部原理10.1 笔记</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>看来直接硬啃文档不可取，学习命令的时候对整个git的内部原理会有一些疑惑，比如在git clone –shared中，实操发现区别在于 <code>.git/objects</code> 文件夹下，但是这个文件夹时做什么用的呢？存的是改动吗？使用了shared参数以后就会直接使用/info/alternates文件下给定的路径吗？</p>
+<p>在执行 <code>git init</code> 建立非裸仓库时，会建立一个 <code>.git</code> 目录，这个目录里包含了所有git存储和操作的东西，如果像备份或复制一个版本库，可以把整个目录拷贝至另一处即可。<br>目录的典型结构为，不同的版本可能包含其他内容：</p>
+<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ls -F1</span></span><br><span class="line">config</span><br><span class="line">description</span><br><span class="line">HEAD</span><br><span class="line">hooks/</span><br><span class="line">info/</span><br><span class="line">objects/</span><br><span class="line">refs/</span><br></pre></td></tr></table></figure>
+
+<p>其中：</p>
+<ul>
+<li>description文件用于共GitWeb程序使用；</li>
+<li>config文件包含项目特有的配置选项；</li>
+<li>info目录包含一个全局性排除文件，用于防止那些不希望被记录在 <code>.gitignore</code> 文件中的忽略模式；</li>
+<li>hooks目录包含客户端或服务端的钩子脚本；</li>
+</ul>
+<p>重要部分：</p>
+<ul>
+<li>HEAD文件指向目前被checkout的分支</li>
+<li>refs目录存储指向数据的提交对象的指针；</li>
+<li>index文件保存暂存区信息；</li>
+<li>objects目录存储所有的数据内容。</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2020/10/27/Git%E5%86%85%E9%83%A8%E5%8E%9F%E7%90%86/" data-id="ckgrpqak80000vobh045de0qs" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Git/" rel="tag">Git</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-Git学习笔记-DAY2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/10/26/Git%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0-DAY2/" class="article-date">
+  <time datetime="2020-10-26T00:49:53.000Z" itemprop="datePublished">2020-10-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/10/26/Git%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0-DAY2/">Git学习笔记-DAY2</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="克隆-git-clone-lt-repository-gt-lt-directory-gt"><a href="#克隆-git-clone-lt-repository-gt-lt-directory-gt" class="headerlink" title="克隆 git clone \&lt;repository\&gt; [\&lt;directory\&gt;]"></a>克隆 <code>git clone \&lt;repository\&gt; [\&lt;directory\&gt;]</code></h3><p>克隆一个仓库到新建的文件夹中，对于克隆的库里的每一个分支，建立一个远程追踪分支（可以被git branch –remotes看见的），然后建立一个初始分支来自于被克隆库当前的分支，并切换到它上面。</p>
+<p>在克隆后一个 <code>git fetch</code> 可以更新所有远程追踪分支，一个 <code>git pull</code> 会在此基础之上合并远程和本地的主分支。</p>
+<p>通过获取远程分支的head引用（在 <code>refs/remotes/origin</code> 中），并通过初始化 <code>remote.origin.url</code> 和 <code>remote.origin.fetch</code> 来建立默认配置的。</p>
+<h4 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h4><h5 id="l-–local"><a href="#l-–local" class="headerlink" title="-l –local"></a>-l –local</h5><p>本地克隆，当你从本地克隆一个库时，这个参数将会告诉git复制头指针和所有在objects，refs文件夹下的所有东西，而在.git/objects文件夹下的文件将会是硬链接的一节省磁盘空间。<br>如果库被指向了一个本地路径，那这个参数将被默认启用，加入这个参数等于无用功，如果库指向了一个URL，那么这个参数将被默认忽略，如果制定了 <code>--no-local</code> 参数将会覆盖默认值。</p>
+<h5 id="no-hardlinks"><a href="#no-hardlinks" class="headerlink" title="-no-hardlinks"></a>-no-hardlinks</h5><p>强制克隆本地库的操作复制在 <code>.git/objects</code> 文件夹下的文件而不是用硬链接，当你希望给本地库做备份的时候可以使用这个命令。</p>
+<h5 id="s-–shared"><a href="#s-–shared" class="headerlink" title="-s –shared"></a>-s –shared</h5><p>当本地机器上的一个库被克隆时，设置 <code>.git/objects/info/alternates</code> 与源库共享objects来取代硬链接（符号连接？），最后克隆出来的库将会没有任何自己拥有的对象。</p>
+<p>注：这可能是个很危险的操作，不要使用它除非你很清楚将会发生什么。如果你克隆你的库使用这个选项然后删除了源库中的分支，或使用其他git命令是的任何提交变成未引用的或者悬空的，这些对象可能被正常的Git操作移除。</p>
+<p>这里有点犯浑了，我得去看下.git/objects里面到底是什么。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2020/10/26/Git%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0-DAY2/" data-id="ckgrpqakh0002vobhfatrfnxl" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Git/" rel="tag">Git</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Git学习笔记-DAY1" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/10/23/Git%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0-DAY1/" class="article-date">
@@ -86,30 +188,26 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>准备学习一下Git的命令行，虽说现在用的是perforce，但是说不准那天就要用上。<br>正好可以利用这个机会顺手玩一下Hexo，这个站就是用Hexo搭的，本来还想自己写一点模板，一看ejs一头包，先把Git学完，再找机会读一下其他人写的theme来学习一下吧。<br>笔记大部分情况是给自己看的，所以我也就不讲什么是git了，没什么太大的意义。</p>
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>准备学习一下Git的命令行，虽说现在用的是perforce，但是说不准那天就要用上。<br>正好可以利用这个机会顺手玩一下Hexo，这个站就是用Hexo搭的，配合GitHub Page，正好可以学习Git的使用。<br>笔记大部分情况是给自己看的，所以我也就不讲什么是git了，没什么太大的意义。<br>我的学习路线是直接看git自己的文档顺便做一个翻译，手敲命令去理解，然后对于不懂的部分再去google查对应的应用，然后作为笔记记在对应的parameter上，第一天，先来看一个init吧。</p>
 <h3 id="创建本地仓库-git-init"><a href="#创建本地仓库-git-init" class="headerlink" title="创建本地仓库 git init"></a>创建本地仓库 <code>git init</code></h3><p>这个命令主要用来创建一个新的Git Repository，本质上使在文件夹中建立一个 <code>.git</code> 文件夹，这个文件夹将会作为你的本地仓库使用</p>
 <h4 id="参数："><a href="#参数：" class="headerlink" title="参数："></a>参数：</h4><h5 id="q-–quite："><a href="#q-–quite：" class="headerlink" title="-q –quite："></a>-q –quite：</h5><p>仅打印错误和警告消息；所有其他输出不会显示</p>
 <h5 id="–bare："><a href="#–bare：" class="headerlink" title="–bare："></a>–bare：</h5><p>在当前目录内创建一个裸库，不建立工作区。</p>
-<p>裸库可以被正常的被clone和push更新，而非裸库在clone后则无法简单的将做过的修改提交给非裸库，会得到如下的错误：</p>
-<blockquote>
-<p>error: refusing to update checked out branch: refs/heads/master</p>
-</blockquote>
-<blockquote>
-<p>error: By default, updating the current branch in a non-bare repository</p>
-</blockquote>
-<p> is denied, because it will make the index and work tree inconsistent<br> with what you pushed, and will require ‘git reset –hard’ to match<br> the work tree to HEAD.</p>
+<p>裸库被拉取后可以被正常的被clone和push更新，但是因为没有工作区在没有clone前不能进行commit，而非裸库在clone后则无法直接提交修改给非裸库，会得到如下的错误：</p>
+<p><font color=#DC143C>error: refusing to update checked out branch: refs/heads/master</p>
+<p>error: By default, updating the current branch in a non-bare repository<br>is denied, because it will make the index and work tree inconsistent<br>with what you pushed, and will require ‘git reset –hard’ to match<br>the work tree to HEAD.</font></p>
 <p>故一般用于建立远程库。</p>
 <h5 id="–object-format-lt-sha1-sha256-gt-："><a href="#–object-format-lt-sha1-sha256-gt-：" class="headerlink" title="–object-format=&lt;sha1/sha256&gt;："></a>–object-format=&lt;sha1/sha256&gt;：</h5><p>指定存储库的hash算法，默认值为 <code>sha1</code> ；</p>
-<h5 id="–template-："><a href="#–template-：" class="headerlink" title="–template=："></a>–template=<format>：</h5><p>使用模板创建工作目录，默认值为按如下优先级顺序获取:</p>
+<h5 id="–template-lt-directory-gt-："><a href="#–template-lt-directory-gt-：" class="headerlink" title="–template=&lt;directory&gt;："></a>–template=&lt;directory&gt;：</h5><p>使用模板创建工作目录，默认值为按如下优先级顺序获取:</p>
 <ul>
-<li>指定参数; </li>
+<li>指定参数&lt;directory&gt;; </li>
 <li><code>GIT_TEMPLATE_DIR</code> 环境变量；</li>
 <li><code>init.templateDir</code> 配置变量；</li>
 <li>默认模板</li>
 </ul>
 <p>创建库时会将其中的所有不以. 为开头的文件和目录复制进库中，默认的模板中有一些hook的样例，但是这些hook不会被启用，需要启用则需要删除其后缀 <code>.sample</code> 。<br>另外还有一些建议的排除模式在 <code>info/exclude</code> 下。</p>
 <h5 id="–separate-git-dir-lt-directory-gt"><a href="#–separate-git-dir-lt-directory-gt" class="headerlink" title="–separate-git-dir=&lt;directory&gt;"></a>–separate-git-dir=&lt;directory&gt;</h5><p>将本地库初始化至指定目录，也可以用于本地库移动到指定的路径。</p>
-<h5 id="b-–initial-branch"><a href="#b-–initial-branch" class="headerlink" title="-b –initial-branch="></a>-b –initial-branch=<name></h5><p>指定新建库中的初始分支名字，默认值为 <code>master</code> 。</p>
+<p>这个和bare repository的区别，同样或创作工作区，适用于将本地库和工作区分开。</p>
+<h5 id="b-–initial-branch-lt-name-gt"><a href="#b-–initial-branch-lt-name-gt" class="headerlink" title="-b –initial-branch=&lt;name&gt;"></a>-b –initial-branch=&lt;name&gt;</h5><p>指定新建库中的初始分支名字，默认值为 <code>master</code> 。</p>
 <h5 id="–shared-false-true-umask-group-all-world-everybody-0xxx"><a href="#–shared-false-true-umask-group-all-world-everybody-0xxx" class="headerlink" title="–shared[=(false|true|umask|group|all|world|everybody|0xxx)]"></a>–shared[=(false|true|umask|group|all|world|everybody|0xxx)]</h5><p>指定git库的用户权限，默认值为umask或false</p>
 <ul>
 <li>umask: 使用当前目录的权限</li>
@@ -176,6 +274,14 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/10/27/Git%E5%86%85%E9%83%A8%E5%8E%9F%E7%90%86/">Git 内部原理10.1 笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2020/10/26/Git%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0-DAY2/">Git学习笔记-DAY2</a>
+          </li>
         
           <li>
             <a href="/2020/10/23/Git%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0-DAY1/">Git学习笔记 DAY1</a>
