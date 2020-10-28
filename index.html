@@ -64,6 +64,59 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-gitObjects" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/10/27/gitObjects/" class="article-date">
+  <time datetime="2020-10-27T09:06:12.000Z" itemprop="datePublished">2020-10-27</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/10/27/gitObjects/">Git对象</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Git的核心部分是一个简单的键值对数据库，可以向git仓库中欧给你插入任意类型的数据，他会返回一个唯一的键，通过键可以在任意时刻再次取回该内容。</p>
+<p>可以通过底层命令 <code>git has-object</code> 来实现效果，该命令可以将任意数据保存于 <code>.git/objects</code> 目录下，并返回该对象的键值。</p>
+<p>键值是通过你在 <code>git init</code> 时给定的 <code>--object-format</code> 参数来生成的，默认是sha1，也就是说所谓的键值实际上是数据的hash值。</p>
+<p>是否有可能产生意料之外的hash碰撞，答案是会的，但是第一这种行为除非刻意去出发，正常情况下很难发生，其次git并只将数据做hash，同时也会用一个头部信息和数据合并，同时计算出一个hash值，使碰撞发生的可能性大大降低。</p>
+<p>生成出的校验值，git将会使用前两位命名子目录，后38位用作文件名。</p>
+<p>可以通过 <code>git cat-file &lt;key&gt;</code> 命令来取回存储的数据。<br>-p 动态获取 -t 获取类型</p>
+<p>随机挑选了一个对象来做实验：</p>
+<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> git cat-file -p 0b5300d526aec62b34762e44e3cf3d2f6e3b2421</span></span><br><span class="line">040000 tree 063b27d8a4076d6f0748228cea43ffd963678206    fonts</span><br><span class="line">040000 tree 37f76cc0991820302f37a44f7478d6c106f276a7    images</span><br><span class="line">100644 blob 0cfa2d302788a751586723a655e46d5aef4feebd    style.css</span><br></pre></td></tr></table></figure>
+
+<p>然后尝试cat-file <code>style.css</code> ，获得了style.css这个文件的信息，这里获取了全部的文件，和我一开始的猜想有点不一样，我以为会是修改记录的。<br>但是从文件夹大小来看，这个全文件通过修改记录生成的。</p>
+<p>树对象（tree object）:</p>
+<p>它能解决文件名保存的问题，也允许我们将多个文件组织到一起。 Git 以一种类似于 UNIX 文件系统的方式存储内容，但作了些许简化。 所有内容均以树对象和数据对象的形式存储，其中树对象对应了 UNIX 中的目录项，数据对象则大致上对应了 inodes 或文件内容。 一个树对象包含了一条或多条树对象记录（tree entry），每条记录含有一个指向数据对象或者子树对象的 SHA-1 指针，以及相应的模式、类型、文件名信息。</p>
+<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> git cat-file -p master^&#123;tree&#125;</span></span><br><span class="line">040000 tree 120f519f1a200935e675f8335a80221ab439c34f    2020</span><br><span class="line">040000 tree b7f54f3680f8ad0f23e1e1f8b2e6c953a260b739    archives</span><br><span class="line">040000 tree 0b5300d526aec62b34762e44e3cf3d2f6e3b2421    css</span><br><span class="line">040000 tree dbb7d26325b8e03fff5f68294ccde5a2ffdeddf9    fancybox</span><br><span class="line">100644 blob 6eb9caee1a936e15347afb3a44359287850efc0e    index.html</span><br><span class="line">040000 tree d3383dc6db031284e1bcb3277f5b9aafca52566a    js</span><br><span class="line">040000 tree e22c28b132827c88fb3f788842ff99ec17d355f7    tags</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><img src="https://git-scm.com/book/en/v2/images/data-model-1.png" alt="Stucture"></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2020/10/27/gitObjects/" data-id="ckgspgfvs0000f8bhccdo0eo6" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Git/" rel="tag">Git</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Git内部原理" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/10/27/Git%E5%86%85%E9%83%A8%E5%8E%9F%E7%90%86/" class="article-date">
@@ -274,6 +327,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/10/27/gitObjects/">Git对象</a>
+          </li>
         
           <li>
             <a href="/2020/10/27/Git%E5%86%85%E9%83%A8%E5%8E%9F%E7%90%86/">Git 内部原理10.1 笔记</a>
