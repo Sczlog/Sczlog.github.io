@@ -90,7 +90,7 @@
 <p>可以通过底层命令 <code>git has-object</code> 来实现效果，该命令可以将任意数据保存于 <code>.git/objects</code> 目录下，并返回该对象的键值。</p>
 <p>键值是通过你在 <code>git init</code> 时给定的 <code>--object-format</code> 参数来生成的，默认是sha1，也就是说所谓的键值实际上是数据的hash值。</p>
 <p>是否有可能产生意料之外的hash碰撞，答案是会的，但是第一这种行为除非刻意去出发，正常情况下很难发生，其次git并只将数据做hash，同时也会用一个头部信息和数据合并，同时计算出一个hash值，使碰撞发生的可能性大大降低。</p>
-<p>生成出的校验值，git将会使用前两位命名子目录，后38位用作文件名。</p>
+<p>注：hash生成方式： <code>sha1([type] [length]\0[content])</code> <br>生成出的校验值，git将会使用前两位命名子目录，后38位用作文件名。</p>
 <p>可以通过 <code>git cat-file &lt;key&gt;</code> 命令来取回存储的数据。<br>-p 动态获取 -t 获取类型</p>
 <p>随机挑选了一个对象来做实验：</p>
 <figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> git cat-file -p 0b5300d526aec62b34762e44e3cf3d2f6e3b2421</span></span><br><span class="line">040000 tree 063b27d8a4076d6f0748228cea43ffd963678206    fonts</span><br><span class="line">040000 tree 37f76cc0991820302f37a44f7478d6c106f276a7    images</span><br><span class="line">100644 blob 0cfa2d302788a751586723a655e46d5aef4feebd    style.css</span><br></pre></td></tr></table></figure>
